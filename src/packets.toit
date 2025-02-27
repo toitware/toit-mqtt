@@ -8,6 +8,9 @@ import reader as old-reader
 import .last-will
 import .topic-qos
 
+interface AckPacket:
+  packet-id -> int
+
 abstract class Packet:
   type/int
   flags/int
@@ -376,7 +379,7 @@ class PublishPacketReader_ extends io.Reader implements old-reader.SizedReader:
     remaining_ = 0
     return payload
 
-class PubAckPacket extends Packet:
+class PubAckPacket extends Packet implements AckPacket:
   static TYPE ::= 4
 
   packet-id/int
@@ -426,7 +429,7 @@ class SubscribePacket extends Packet:
       buffer.write-byte topic-qos.max-qos
     return buffer.bytes
 
-class SubAckPacket extends Packet:
+class SubAckPacket extends Packet implements AckPacket:
   static TYPE ::= 9
 
   /** The qos value for a failed subscription. */
@@ -478,7 +481,7 @@ class UnsubscribePacket extends Packet:
       Packet.encode-string buffer topic-qos
     return buffer.bytes
 
-class UnsubAckPacket extends Packet:
+class UnsubAckPacket extends Packet implements AckPacket:
   static TYPE ::= 11
 
   packet-id /int

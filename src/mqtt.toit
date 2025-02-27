@@ -5,6 +5,7 @@
 import .client
 import .full-client
 import .session-options
+import .simple-client
 import .tcp
 import .last-will
 import .topic-qos
