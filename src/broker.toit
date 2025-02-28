@@ -129,10 +129,8 @@ class Session_:
 
   subscription-tree_ /TopicTree ::= TopicTree
   connection_ /Connection_? := null
-  // TODO(florian): the following fields should be typed as `Task?`.
-  // However, that class is only available in Toit 2.0.
-  reader-task_ /any := null
-  writer-task_ /any := null
+  reader-task_ /Task? := null
+  writer-task_ /Task? := null
 
   queued_ /QueuedMessages_ ::= QueuedMessages_
 
@@ -322,6 +320,11 @@ class Session_:
     // subscriptions match. We thus use the one from the most specialized.
     subscription-tree_.do --most-specialized packet.topic: | subscription-max-qos |
       qos := min packet.qos subscription-max-qos
+      if state_ != STATE-RUNNING_ and qos == 0:
+        // We don't queue qos=0 packets if the client is disconnected.
+        // In theory we could/should also delete queued messages if the
+        // client disconnects after we queued them.
+        continue.do
       NO-PACKET-ID ::= -1  // See $PublishPacket.with.
       packet-id := qos > 0 ? next-packet-id_++ : NO-PACKET-ID
       send_ (packet.with --packet-id=packet-id --qos=qos)
