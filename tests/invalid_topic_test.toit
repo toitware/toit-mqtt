@@ -45,7 +45,7 @@ test-topic topic/string create-transport/Lambda --mode/string --logger/log.Logge
           publish := packet as mqtt.PublishPacket
           callbacks[publish.topic].call publish
         else:
-          logger.info "ignored $(mqtt.Packet.debug-string_ packet)"
+          logger.info "ignored $packet"
       logger.info "client shut down"
     expect-not-null exception
     done.set true

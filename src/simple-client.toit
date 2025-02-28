@@ -283,6 +283,7 @@ class SimpleClient:
         else:
           throw CONNECTION-CLOSED_
 
+      logger_.debug "received packet" --tags={"packet": packet}
       if packet is PingRespPacket:
         continue
       else if packet is PublishPacket:
@@ -295,7 +296,6 @@ class SimpleClient:
         // listening to the received-signal. By wrapping the assignment
         // of the packet into a mutex we guarantee that they have the
         // time to do so.
-        logger_.debug "received packet" --tags={"packet": packet}
         connection-monitor_.do:
           last-received_ = packet
 

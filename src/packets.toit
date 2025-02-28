@@ -107,60 +107,6 @@ abstract class Packet:
     length-bytes := reader.read-bytes 2
     return io.BIG-ENDIAN.uint16 length-bytes 0
 
-  static debug-string_ packet/Packet -> string:
-    if packet is ConnectPacket:
-      connect := packet as ConnectPacket
-      return ("Connect: $connect.client-id"
-              + " $(connect.clean-session ? "clean": "reuse")"
-              + " $(connect.last-will ? "last-will-for-$connect.last-will.topic": "no-last-will")"
-              + " $(connect.username ? "with-username-$connect.username": "no-username")"
-              + " $(connect.password ? "with-password-$connect.password": "no-password")"
-              + " $(connect.keep-alive)")
-    else if packet is PingReqPacket:
-      return "Ping request"
-    else if packet is PingRespPacket:
-      return "Ping response"
-    else if packet is ConnAckPacket:
-      connack := packet as ConnAckPacket
-      return "ConnAck: $connack.return-code $connack.session-present"
-    else if packet is PublishPacket:
-      publish := packet as PublishPacket
-      result := "Publish$(publish.packet-id ? "($publish.packet-id)" : "")"
-          + " topic=$publish.topic"
-          + " qos=$publish.qos"
-          + " $(publish.duplicate ? "dup": "no-dup")"
-          + " $(publish.retain ? "retain": "no-retain")"
-          + " $(publish.payload.size) bytes"
-      if publish.payload.size < 15 and (publish.payload.every: it < 128):
-        result += " \"$(publish.payload.to-string-non-throwing)\""
-      return result
-    else if packet is PubAckPacket:
-      puback := packet as PubAckPacket
-      return "PubAck($puback.packet-id)"
-    else if packet is SubscribePacket:
-      subscribe := packet as SubscribePacket
-      result := "Subscribe($subscribe.packet-id)"
-      subscribe.topics.do: | topic-qos/TopicQos |
-        result += " $topic-qos.topic-$topic-qos.max-qos"
-      return result
-    else if packet is SubAckPacket:
-      suback := packet as SubAckPacket
-      return "SubAck($suback.packet-id)"
-    else if packet is UnsubscribePacket:
-      unsubscribe := packet as UnsubscribePacket
-      result := "Unsubscribe($unsubscribe.packet-id)"
-      unsubscribe.topics.do:
-        result += " $it"
-      return result
-    else if packet is UnsubAckPacket:
-      unsuback := packet as UnsubAckPacket
-      return "UnsubAck($unsuback.packet-id)"
-    else if packet is DisconnectPacket:
-      disconnect := packet as DisconnectPacket
-      return "Disconnect"
-    else:
-      return "Packet of type $packet.type"
-
 class ConnectPacket extends Packet:
   static TYPE ::= 1
 
@@ -231,6 +177,14 @@ class ConnectPacket extends Packet:
     if password: Packet.encode-string buffer password
     return buffer.bytes
 
+  stringify -> string:
+    return ("Connect: $client-id"
+            + " $(clean-session ? "clean": "reuse")"
+            + " $(last-will ? "last-will-for-$last-will.topic": "no-last-will")"
+            + " $(username ? "with-username-$username": "no-username")"
+            + " $(password ? "with-password-$password": "no-password")"
+            + " $keep-alive")
+
 class ConnAckPacket extends Packet:
   static TYPE ::= 2
 
@@ -256,6 +210,9 @@ class ConnAckPacket extends Packet:
     return #[ session-present ? 1 : 0, return-code]
 
   payload -> ByteArray: return #[]
+
+  stringify -> string:
+    return "ConnAck: $return-code $session-present"
 
 class PublishPacket extends Packet:
   static ID-BIT-SIZE ::= 16
@@ -342,6 +299,22 @@ class PublishPacket extends Packet:
         --packet-id = new-packet-id
         --duplicate = duplicate != null ? duplicate : this.duplicate
 
+  stringify -> string:
+    result := "Publish$(packet-id ? "($packet-id)" : "")"
+            + " topic=$topic"
+            + " qos=$qos"
+            + " $(duplicate ? "dup": "no-dup")"
+            + " $(retain ? "retain": "no-retain")"
+            + " $payload.size bytes"
+    sub-payload := payload_[..min 15 payload_.size]
+    if (sub-payload.every: it < 128):
+      result += " \"$(sub-payload.to-string-non-throwing)\""
+    else:
+      result += " $sub-payload"
+    if sub-payload.size < payload_.size:
+      result += " ..."
+    return result
+
 class PublishPacketReader_ extends io.Reader implements old-reader.SizedReader:
   reader_ /io.Reader
   content-size /int
@@ -396,6 +369,9 @@ class PubAckPacket extends Packet implements AckPacket:
 
   payload -> ByteArray: return #[]
 
+  stringify -> string:
+    return "PubAck($packet-id)"
+
 class SubscribePacket extends Packet:
   static TYPE ::= 8
 
@@ -429,6 +405,12 @@ class SubscribePacket extends Packet:
       buffer.write-byte topic-qos.max-qos
     return buffer.bytes
 
+  stringify -> string:
+    result := "Subscribe($packet-id)"
+    topics.do: | topic-qos/TopicQos |
+      result += " $topic-qos.topic-$topic-qos.max-qos"
+    return result
+
 class SubAckPacket extends Packet implements AckPacket:
   static TYPE ::= 9
 
@@ -451,6 +433,9 @@ class SubAckPacket extends Packet implements AckPacket:
     return Packet.encode-uint16 packet-id
 
   payload -> ByteArray: return ByteArray qos.size: qos[it]
+
+  stringify -> string:
+    return "SubAck($packet-id)"
 
 class UnsubscribePacket extends Packet:
   static TYPE ::= 10
@@ -481,6 +466,12 @@ class UnsubscribePacket extends Packet:
       Packet.encode-string buffer topic-qos
     return buffer.bytes
 
+  stringify -> string:
+    result := "Unsubscribe($packet-id)"
+    topics.do: | topic-qos/string |
+      result += " $topic-qos"
+    return result
+
 class UnsubAckPacket extends Packet implements AckPacket:
   static TYPE ::= 11
 
@@ -498,6 +489,9 @@ class UnsubAckPacket extends Packet implements AckPacket:
 
   payload -> ByteArray: return #[]
 
+  stringify -> string:
+    return "UnsubAck($packet-id)"
+
 class PingReqPacket extends Packet:
   static TYPE ::= 12
 
@@ -512,6 +506,9 @@ class PingReqPacket extends Packet:
 
   payload -> ByteArray:
     return #[]
+
+  stringify -> string:
+    return "Ping request"
 
 class PingRespPacket extends Packet:
   static TYPE ::= 13
@@ -528,6 +525,9 @@ class PingRespPacket extends Packet:
   payload -> ByteArray:
     return #[]
 
+  stringify -> string:
+    return "Ping response"
+
 class DisconnectPacket extends Packet:
   static TYPE ::= 14
 
@@ -542,3 +542,6 @@ class DisconnectPacket extends Packet:
 
   payload -> ByteArray:
     return #[]
+
+  stringify -> string:
+    return "Disconnect"

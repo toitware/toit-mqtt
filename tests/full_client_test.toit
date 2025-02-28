@@ -125,7 +125,7 @@ test create-transport/Lambda --logger/log.Logger:
         publish := packet as mqtt.PublishPacket
         callbacks[publish.topic].call publish
       else:
-        logger.info "ignored $(mqtt.Packet.debug-string_ packet)"
+        logger.info "ignored $packet"
     logger.info "client shut down"
 
   client.when-running:

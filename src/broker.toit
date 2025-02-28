@@ -166,12 +166,12 @@ class Session_:
             logger_.info "client $client-id disconnected"
             disconnect --reason="CLIENT_DISCONNECTED"
             break
-          logger_.debug "received $(Packet.debug-string_ packet) from client $client-id"
+          logger_.debug "received $packet from client $client-id"
           try:
             handle packet
           finally: | is-exception _ |
             if is-exception:
-              logger_.error "error handling packet $(Packet.debug-string_ packet)"
+              logger_.error "error handling packet $packet"
       if exception: disconnect --reason=exception
 
     writer-task_ = task::
@@ -183,7 +183,7 @@ class Session_:
 
         while true:
           packet := queued_.next
-          logger_.debug "writing $(Packet.debug-string_ packet)"
+          logger_.debug "writing $packet"
           if packet is PublishPacket:
             publish := packet as PublishPacket
             if publish.qos > 0:
@@ -221,7 +221,7 @@ class Session_:
       waiting-for-ack_.remove id
       return
 
-    logger_.warn "unhandled packet $(Packet.debug-string_ packet)"
+    logger_.warn "unhandled packet $packet"
 
   subscribe packet/SubscribePacket:
     result-qos := []
@@ -377,7 +377,7 @@ class Broker:
             connection.close
             continue.listen
 
-          logger_.info "read packet $(Packet.debug-string_ packet)"
+          logger_.debug "read packet $packet"
           if packet is not ConnectPacket:
             logger_.error "didn't receive connect packet, but got packet of type $packet.type"
             connection.close
@@ -385,7 +385,7 @@ class Broker:
 
           connect := packet as ConnectPacket
 
-          logger_.info "new connection-request: $(Packet.debug-string_ connect)"
+          logger_.debug "new connection-request: $connect"
 
           client-id := connect.client-id
           connack /ConnAckPacket ::= ?
@@ -420,7 +420,7 @@ class Broker:
       publish-task.cancel
 
   publish packet/PublishPacket:
-    logger_.info "publishing $(Packet.debug-string_ packet)"
+    logger_.info "publishing $packet"
     if packet.retain:
       if packet.payload.size == 0: retained.remove packet.topic
       else: retained.set packet.topic packet
