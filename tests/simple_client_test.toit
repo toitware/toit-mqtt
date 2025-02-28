@@ -114,6 +114,9 @@ test-unclean-session create-transport/Lambda --logger/log.Logger:
   unclean-client.publish "done" "done" --qos=0
   done.get
 
+  if catch-all-counter != 2:
+    // Could it be that mosquitto sends them in the wrong order?
+    sleep --ms=1_000
   expect-equals 2 catch-all-counter
   unclean-client.close
 
