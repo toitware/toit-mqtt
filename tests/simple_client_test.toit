@@ -193,7 +193,8 @@ test create-transport/Lambda --logger/log.Logger:
 
 main args:
   test-with-mosquitto := args.contains "--mosquitto"
-  log-level := log.ERROR-LEVEL
+  // log-level := log.ERROR-LEVEL
+  log-level := log.DEBUG-LEVEL
   logger := log.default.with-level log-level
 
   run-test := : | create-transport/Lambda | test create-transport --logger=logger
