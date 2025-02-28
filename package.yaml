@@ -2,4 +2,4 @@ name: mqtt
 description: An MQTT v3.1.1 Toit client, with support for QoS 0 and 1.
 
 environment:
-  sdk: ^2.0.0-alpha.151
+  sdk: ^2.0.0-alpha.161

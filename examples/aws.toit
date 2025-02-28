@@ -53,13 +53,14 @@ create-transport -> mqtt.Transport:
   client-certificate := tls.Certificate (x509.Certificate.parse CLIENT-CERTIFICATE) CLIENT-KEY
   return mqtt.TcpTransport.tls --host=HOST --port=PORT
       --server-name=HOST
-      --root-certificates=[certificate-roots.AMAZON-ROOT-CA-1]
       --certificate=client-certificate
 
 main:
+  certificate-roots.install-common-trusted-roots
+
   transport := create-transport
 
-  client := mqtt.Client --transport=transport
+  client := mqtt.SimpleClient --transport=transport
 
   options := mqtt.SessionOptions
       --client-id=CLIENT-ID

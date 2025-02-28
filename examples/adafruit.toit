@@ -27,13 +27,14 @@ ADAFRUIT-IO-FEEDNAME ::= "<YOUR_FEEDNAME>"
 HOST ::= "io.adafruit.com"
 
 main:
-  client := mqtt.Client.tls --host=HOST
-      --root-certificates=[ certificate-roots.DIGICERT-GLOBAL-ROOT-CA ]
+  certificate-roots.install-common-trusted-roots
+  client := mqtt.SimpleClient.tls --host=HOST
   /**
   // Alternatively, you can also connect without TLS, by using the
   // following client:
   client := mqtt.Client --host=HOST
-  // In that case you can remove the `certificate_roots` import.
+  // In that case you can remove the `certificate_roots` import and the
+  // `certificate-roots.install-common-trusted-roots` call.
   */
 
   options := mqtt.SessionOptions
